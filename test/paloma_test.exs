@@ -53,9 +53,10 @@ defmodule PalomaTest do
 
   describe "delete/1 by fields" do
     test "deletes a resource by name and returns a resource tuple" do
-      {:ok, tree} = create(:tree)
+      {:ok, tree} = create(:tree, %{name: "Willow"})
+      create(:tree)
       {:ok, _resource} = Tree.retrieve(tree.id)
-      {:ok, resource} = Tree.delete(equals: [name: tree.name])
+      {:ok, resource} = Tree.delete(name: [equal: tree.name])
       assert resource.id == tree.id
       {:error, :not_found} = Tree.retrieve(tree.id)
     end
@@ -91,25 +92,33 @@ defmodule PalomaTest do
       assert page.total_pages == 1
     end
 
-    test "supports filtering results by name" do
-      {:ok, tree} = create(:tree, %{name: "Cairn"})
-      {:ok, page} = Tree.list(equal: [name: "Not Cairn"])
+    test "supports filtering results by fields" do
+      {:ok, tree1} = create(:tree, %{bark_color: "gray", name: "Birch"})
+      {:ok, tree2} = create(:tree, %{bark_color: "brown", name: "Walnut"})
+      {:ok, tree3} = create(:tree, %{bark_color: "gray", name: "Oak"})
+      {:ok, page} = Tree.list(name: [equal: "Willow"])
       assert page.entries == []
-      {:ok, page} = Tree.list(equal: [name: ["Not Cairn"]])
-      assert page.entries == []
-      {:ok, page} = Tree.list(not_equal: [name: "Cairn"])
-      assert page.entries == []
-      {:ok, page} = Tree.list(not_equal: [name: ["Cairn"]])
-      assert page.entries == []
-      {:ok, %{entries: [result]}} = Tree.list(equal: [name: "Cairn"])
-      assert result == tree
-      {:ok, %{entries: [result]}} = Tree.list(not_equal: [name: "Not Cairn"])
-      assert result == tree
+      {:ok, %{entries: [result]}} = Tree.list(name: [equal: "Birch"])
+      assert result == tree1
+      {:ok, %{entries: results}} = Tree.list(name: [equal: ["Birch", "Oak"]])
+      assert Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(name: [not_equal: "Birch"])
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(name: [not_equal: ["Birch", "Oak"]])
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
 
-      {:ok, %{entries: [result]}} =
-        Tree.list(equal: [name: "Cairn"], not_equal: [name: "Not Cairn"])
+      {:ok, %{entries: results}} =
+        Tree.list(bark_color: [equal: "gray"], name: [not_equal: "Birch"])
 
-      assert result == tree
+      refute Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
     end
 
     test "returns an UndefinedFunctionError error when resource does not include action" do
@@ -143,14 +152,14 @@ defmodule PalomaTest do
     test "returns a resource tuple when filters are defined" do
       create(:tree, %{name: "Birch", height: 11})
       create(:tree, %{name: "Willow", height: 11})
-      {:ok, result} = Tree.retrieve(equal: [name: "Birch", height: 11])
+      {:ok, result} = Tree.retrieve(name: [equal: "Birch"], height: [equal: 11])
       assert result.name == "Birch"
       assert result.height == 11
     end
 
     test "returns a bad_request error tuple when filters are not defined" do
       create(:beach, %{name: "Birch"})
-      {:error, :bad_request} = Beach.retrieve(equal: [name: "Birch"])
+      {:error, :bad_request} = Beach.retrieve(name: [equal: "Birch"])
     end
 
     test "returns error for multiple matching results" do
@@ -158,7 +167,7 @@ defmodule PalomaTest do
       create(:tree, %{name: "Birch"})
 
       assert_raise Ecto.MultipleResultsError, fn ->
-        Tree.retrieve(equal: [name: "Birch"])
+        Tree.retrieve(name: [equal: "Birch"])
       end
     end
   end

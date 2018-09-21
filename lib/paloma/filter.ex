@@ -15,8 +15,8 @@ defmodule Paloma.Filter do
 
   defp extract_filters(opts, type, fields) do
     opts
-    |> Keyword.get(type, [])
     |> sanitize(fields)
+    |> filters_for(type)
     |> dynamic_query(type)
   end
 
@@ -35,6 +35,15 @@ defmodule Paloma.Filter do
 
   defp dynamic_query(:not_equal, attr, values) when is_list(values),
     do: dynamic([q], field(q, ^attr) not in ^values)
+
+  defp filters_for(whitelisted_fields, type) do
+    whitelisted_fields
+    |> Enum.reduce([], fn {elem_k, elem_v}, acc ->
+      match = for({elem_type, val} <- elem_v, type == elem_type, do: {elem_k, val})
+      [match | acc]
+    end)
+    |> List.flatten()
+  end
 
   defp present?(list) when is_list(list), do: length(list) > 0
   defp present?(value) when is_binary(value), do: String.length(value) > 0

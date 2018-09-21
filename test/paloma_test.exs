@@ -38,6 +38,14 @@ defmodule PalomaTest do
       {:error, :not_found} = Beach.retrieve(beach.id)
     end
 
+    test "deletes a resource with a string ID" do
+      {:ok, beach} = create(:beach)
+      {:ok, _resource} = Beach.retrieve(beach.id)
+      {:ok, resource} = Beach.delete("#{beach.id}")
+      assert resource.id == beach.id
+      {:error, :not_found} = Beach.retrieve(beach.id)
+    end
+
     test "returns a bad request error tuple for the wrong type of arguments" do
       {:error, :bad_request} = Beach.delete("bogus")
     end
@@ -135,6 +143,12 @@ defmodule PalomaTest do
       assert beach == result
     end
 
+    test "returns a resource tuple by string ID" do
+      {:ok, beach} = create(:beach)
+      {:ok, result} = Beach.retrieve("#{beach.id}")
+      assert beach == result
+    end
+
     test "returns an UndefinedFunctionError error when resource does not include action" do
       {:ok, cloud} = create(:cloud)
 
@@ -169,6 +183,40 @@ defmodule PalomaTest do
       assert_raise Ecto.MultipleResultsError, fn ->
         Tree.retrieve(name: [equal: "Birch"])
       end
+    end
+  end
+
+  describe "update/2 by ID" do
+    test "updates resource and returns a resource tuple by ID" do
+      {:ok, beach} = create(:beach)
+      {:ok, result} = Beach.update(beach.id, %{name: "updated"})
+      {:ok, beach} = Beach.retrieve("#{beach.id}")
+      assert beach.name == result.name
+    end
+
+    test "updates resource and returns a resource tuple by string ID" do
+      {:ok, beach} = create(:beach)
+      {:ok, result} = Beach.update("#{beach.id}", %{name: "updated"})
+      {:ok, beach} = Beach.retrieve("#{beach.id}")
+      assert beach.name == result.name
+    end
+
+    test "returns a changeset error tuple" do
+      {:ok, beach} = create(:beach)
+      {:error, changeset} = Beach.update("#{beach.id}", %{name: ""})
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "returns an UndefinedFunctionError error when resource does not include action" do
+      {:ok, cloud} = create(:cloud)
+
+      assert_raise UndefinedFunctionError, fn ->
+        Cloud.update(cloud.id, %{name: "updated"})
+      end
+    end
+
+    test "returns a not found error tuple" do
+      {:error, :not_found} = Beach.update(123_456, %{name: "updated"})
     end
   end
 

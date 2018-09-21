@@ -53,9 +53,10 @@ defmodule PalomaTest do
 
   describe "delete/1 by fields" do
     test "deletes a resource by name and returns a resource tuple" do
-      {:ok, tree} = create(:tree)
+      {:ok, tree} = create(:tree, %{name: "Willow"})
+      create(:tree)
       {:ok, _resource} = Tree.retrieve(tree.id)
-      {:ok, resource} = Tree.delete(equals: [name: tree.name])
+      {:ok, resource} = Tree.delete(name: [equal: tree.name])
       assert resource.id == tree.id
       {:error, :not_found} = Tree.retrieve(tree.id)
     end
@@ -93,21 +94,20 @@ defmodule PalomaTest do
 
     test "supports filtering results by name" do
       {:ok, tree} = create(:tree, %{name: "Cairn"})
-      {:ok, page} = Tree.list(equal: [name: "Not Cairn"])
+      {:ok, page} = Tree.list(name: [equal: "Not Cairn"])
       assert page.entries == []
-      {:ok, page} = Tree.list(equal: [name: ["Not Cairn"]])
+      {:ok, page} = Tree.list(name: [equal: ["Not Cairn"]])
       assert page.entries == []
-      {:ok, page} = Tree.list(not_equal: [name: "Cairn"])
+      {:ok, page} = Tree.list(name: [not_equal: "Cairn"])
       assert page.entries == []
-      {:ok, page} = Tree.list(not_equal: [name: ["Cairn"]])
+      {:ok, page} = Tree.list(name: [not_equal: ["Cairn"]])
       assert page.entries == []
-      {:ok, %{entries: [result]}} = Tree.list(equal: [name: "Cairn"])
+      {:ok, %{entries: [result]}} = Tree.list(name: [equal: "Cairn"])
       assert result == tree
-      {:ok, %{entries: [result]}} = Tree.list(not_equal: [name: "Not Cairn"])
+      {:ok, %{entries: [result]}} = Tree.list(name: [not_equal: "Not Cairn"])
       assert result == tree
 
-      {:ok, %{entries: [result]}} =
-        Tree.list(equal: [name: "Cairn"], not_equal: [name: "Not Cairn"])
+      {:ok, %{entries: [result]}} = Tree.list(name: [equal: "Cairn", not_equal: "Not Cairn"])
 
       assert result == tree
     end
@@ -143,14 +143,14 @@ defmodule PalomaTest do
     test "returns a resource tuple when filters are defined" do
       create(:tree, %{name: "Birch", height: 11})
       create(:tree, %{name: "Willow", height: 11})
-      {:ok, result} = Tree.retrieve(equal: [name: "Birch", height: 11])
+      {:ok, result} = Tree.retrieve(name: [equal: "Birch"], height: [equal: 11])
       assert result.name == "Birch"
       assert result.height == 11
     end
 
     test "returns a bad_request error tuple when filters are not defined" do
       create(:beach, %{name: "Birch"})
-      {:error, :bad_request} = Beach.retrieve(equal: [name: "Birch"])
+      {:error, :bad_request} = Beach.retrieve(name: [equal: "Birch"])
     end
 
     test "returns error for multiple matching results" do
@@ -158,7 +158,7 @@ defmodule PalomaTest do
       create(:tree, %{name: "Birch"})
 
       assert_raise Ecto.MultipleResultsError, fn ->
-        Tree.retrieve(equal: [name: "Birch"])
+        Tree.retrieve(name: [equal: "Birch"])
       end
     end
   end

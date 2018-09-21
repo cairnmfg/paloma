@@ -92,24 +92,33 @@ defmodule PalomaTest do
       assert page.total_pages == 1
     end
 
-    test "supports filtering results by name" do
-      {:ok, tree} = create(:tree, %{name: "Cairn"})
-      {:ok, page} = Tree.list(name: [equal: "Not Cairn"])
+    test "supports filtering results by fields" do
+      {:ok, tree1} = create(:tree, %{bark_color: "gray", name: "Birch"})
+      {:ok, tree2} = create(:tree, %{bark_color: "brown", name: "Walnut"})
+      {:ok, tree3} = create(:tree, %{bark_color: "gray", name: "Oak"})
+      {:ok, page} = Tree.list(name: [equal: "Willow"])
       assert page.entries == []
-      {:ok, page} = Tree.list(name: [equal: ["Not Cairn"]])
-      assert page.entries == []
-      {:ok, page} = Tree.list(name: [not_equal: "Cairn"])
-      assert page.entries == []
-      {:ok, page} = Tree.list(name: [not_equal: ["Cairn"]])
-      assert page.entries == []
-      {:ok, %{entries: [result]}} = Tree.list(name: [equal: "Cairn"])
-      assert result == tree
-      {:ok, %{entries: [result]}} = Tree.list(name: [not_equal: "Not Cairn"])
-      assert result == tree
+      {:ok, %{entries: [result]}} = Tree.list(name: [equal: "Birch"])
+      assert result == tree1
+      {:ok, %{entries: results}} = Tree.list(name: [equal: ["Birch", "Oak"]])
+      assert Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(name: [not_equal: "Birch"])
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(name: [not_equal: ["Birch", "Oak"]])
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
 
-      {:ok, %{entries: [result]}} = Tree.list(name: [equal: "Cairn", not_equal: "Not Cairn"])
+      {:ok, %{entries: results}} =
+        Tree.list(bark_color: [equal: "gray"], name: [not_equal: "Birch"])
 
-      assert result == tree
+      refute Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
     end
 
     test "returns an UndefinedFunctionError error when resource does not include action" do

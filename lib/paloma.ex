@@ -38,6 +38,13 @@ defmodule Paloma do
       end
 
       if :delete in unquote(only) do
+        def delete(id) when is_binary(id) do
+          case cast_id(id) do
+            {:ok, id} -> delete(id)
+            error -> error
+          end
+        end
+
         def delete(id) when is_integer(id) do
           case repo().get(unquote(schema), id) do
             %{__struct__: unquote(schema)} = resource ->
@@ -78,6 +85,13 @@ defmodule Paloma do
       end
 
       if :retrieve in unquote(only) do
+        def retrieve(id) when is_binary(id) do
+          case cast_id(id) do
+            {:ok, id} -> retrieve(id)
+            error -> error
+          end
+        end
+
         def retrieve(id) when is_integer(id) do
           case repo().get(unquote(schema), id) do
             %{__struct__: unquote(schema)} = resource -> {:ok, resource}
@@ -100,6 +114,13 @@ defmodule Paloma do
       end
 
       if :update in unquote(only) do
+        def update(id, %{} = params) when is_binary(id) do
+          case cast_id(id) do
+            {:ok, id} -> update(id, params)
+            error -> error
+          end
+        end
+
         def update(id, %{} = params) when is_integer(id) do
           case repo().get(unquote(schema), id) do
             %{__struct__: unquote(schema)} = resource ->
@@ -128,6 +149,13 @@ defmodule Paloma do
         end
 
         def update(_, _), do: {:error, :bad_request}
+      end
+
+      defp cast_id(value) do
+        case Integer.parse(value) do
+          {int_value, _} -> {:ok, int_value}
+          _ -> {:error, :bad_request}
+        end
       end
 
       defp get_by_filters(opts) do

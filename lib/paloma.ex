@@ -1,0 +1,142 @@
+defmodule Paloma do
+  @moduledoc """
+  A shared query interface for CRUD operations operating on Ecto schema.
+  """
+
+  @doc false
+  defmacro __using__(opts) do
+    quote do
+      @_filters unquote(opts)[:filters] || []
+      @_only unquote(opts)[:only] || [:create, :delete, :list, :retrieve, :update]
+      @_schema unquote(opts)[:schema] || __MODULE__
+      @before_compile unquote(__MODULE__)
+
+      use Ecto.Schema
+      import Ecto.Changeset
+    end
+  end
+
+  @doc false
+  defmacro __before_compile__(env) do
+    filters = Module.get_attribute(env.module, :_filters)
+    only = Module.get_attribute(env.module, :_only)
+    schema = Module.get_attribute(env.module, :_schema)
+    compile(filters, only, schema)
+  end
+
+  defp compile(filters, only, schema) do
+    quote do
+      if :create in unquote(only) do
+        def create(%{} = params) do
+          unquote(schema)
+          |> struct(%{})
+          |> unquote(schema).changeset(params)
+          |> repo().insert()
+        end
+
+        def create(_), do: {:error, :bad_request}
+      end
+
+      if :delete in unquote(only) do
+        def delete(id) when is_integer(id) do
+          case repo().get(unquote(schema), id) do
+            %{__struct__: unquote(schema)} = resource ->
+              delete(resource)
+
+            _ ->
+              {:error, :not_found}
+          end
+        end
+
+        if List.first(unquote(filters)) do
+          def delete(opts) when is_list(opts) do
+            opts
+            |> get_by_filters()
+            |> case do
+              %{__struct__: unquote(schema)} = resource -> delete(resource)
+              _ -> {:error, :not_found}
+            end
+          end
+        end
+
+        def delete(%{__struct__: unquote(schema)} = resource) do
+          repo().delete(resource)
+        end
+
+        def delete(_), do: {:error, :bad_request}
+      end
+
+      if :list in unquote(only) do
+        def list(opts \\ []) do
+          resources =
+            unquote(schema)
+            |> Paloma.Filter.call(unquote(filters), opts)
+            |> repo().paginate(page: opts[:page], page_size: opts[:page_size])
+
+          {:ok, resources}
+        end
+      end
+
+      if :retrieve in unquote(only) do
+        def retrieve(id) when is_integer(id) do
+          case repo().get(unquote(schema), id) do
+            %{__struct__: unquote(schema)} = resource -> {:ok, resource}
+            _ -> {:error, :not_found}
+          end
+        end
+
+        if List.first(unquote(filters)) do
+          def retrieve(opts) when is_list(opts) do
+            opts
+            |> get_by_filters()
+            |> case do
+              %{__struct__: unquote(schema)} = resource -> {:ok, resource}
+              _ -> {:error, :not_found}
+            end
+          end
+        end
+
+        def retrieve(_), do: {:error, :bad_request}
+      end
+
+      if :update in unquote(only) do
+        def update(id, %{} = params) when is_integer(id) do
+          case repo().get(unquote(schema), id) do
+            %{__struct__: unquote(schema)} = resource ->
+              update(resource, params)
+
+            _ ->
+              {:error, :not_found}
+          end
+        end
+
+        if List.first(unquote(filters)) do
+          def update(opts, %{} = params) when is_list(opts) do
+            opts
+            |> get_by_filters()
+            |> case do
+              %{__struct__: unquote(schema)} = resource -> update(resource, params)
+              _ -> {:error, :not_found}
+            end
+          end
+        end
+
+        def update(%{__struct__: unquote(schema)} = resource, %{} = params) do
+          resource
+          |> unquote(schema).changeset(params)
+          |> repo().update()
+        end
+
+        def update(_, _), do: {:error, :bad_request}
+      end
+
+      defp get_by_filters(opts) do
+        unquote(schema)
+        |> Paloma.Filter.call(unquote(filters), opts)
+        |> repo().one()
+      end
+
+      defp repo(), do: Application.fetch_env!(:paloma, :repo)
+    end
+  end
+end

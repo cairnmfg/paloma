@@ -3,6 +3,32 @@ defmodule PalomaTest do
 
   use Paloma.Test.DataCase
 
+  describe "__paloma__/1" do
+    test "returns paloma filters configuration" do
+      assert Beach.__paloma__(:filters) == []
+      assert Cloud.__paloma__(:filters) == []
+      assert Tree.__paloma__(:filters) == [:bark_color, :height, :name]
+    end
+
+    test "returns paloma functions configuration" do
+      assert Beach.__paloma__(:functions) == [:create, :delete, :list, :retrieve, :update]
+      assert Cloud.__paloma__(:functions) == []
+      assert Tree.__paloma__(:functions) == [:create, :delete, :list, :retrieve, :update]
+    end
+
+    test "returns paloma schema configuration" do
+      assert Beach.__paloma__(:schema) == Beach
+      assert Cloud.__paloma__(:schema) == Cloud
+      assert Tree.__paloma__(:schema) == Tree
+    end
+
+    test "returns paloma sorts configuration" do
+      assert Beach.__paloma__(:sorts) == []
+      assert Cloud.__paloma__(:sorts) == []
+      assert Tree.__paloma__(:sorts) == [:id, :name]
+    end
+  end
+
   describe "create/1" do
     test "returns a changeset error tuple" do
       {:error, changeset} = Beach.create(%{})

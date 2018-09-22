@@ -129,6 +129,32 @@ defmodule PalomaTest do
       assert Enum.member?(results, tree3)
     end
 
+    test "sorts results by desc ID by default" do
+      {:ok, beach1} = create(:beach)
+      {:ok, beach2} = create(:beach)
+      {:ok, beach3} = create(:beach)
+      {:ok, page} = Beach.list()
+      assert page.entries == [beach3, beach2, beach1]
+    end
+
+    test "supports sorting results" do
+      {:ok, tree1} = create(:tree, %{name: "Birch"})
+      {:ok, tree2} = create(:tree, %{name: "Walnut"})
+      {:ok, tree3} = create(:tree, %{name: "Oak"})
+      {:ok, page} = Tree.list(sort: [asc: :name])
+      assert page.entries == [tree1, tree3, tree2]
+      {:ok, page} = Tree.list(sort: [desc: :name])
+      assert page.entries == [tree2, tree3, tree1]
+    end
+
+    test "supports sorting results with multiple properties" do
+      {:ok, tree1} = create(:tree, %{name: "Birch"})
+      {:ok, tree2} = create(:tree, %{name: "Birch"})
+      {:ok, tree3} = create(:tree, %{name: "Aspen"})
+      {:ok, page} = Tree.list(sort: [asc: :name, desc: :id])
+      assert page.entries == [tree3, tree2, tree1]
+    end
+
     test "returns an UndefinedFunctionError error when resource does not include action" do
       assert_raise UndefinedFunctionError, fn ->
         Cloud.list()

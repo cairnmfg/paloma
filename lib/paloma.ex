@@ -9,6 +9,7 @@ defmodule Paloma do
       @_filters unquote(opts)[:filters] || []
       @_only unquote(opts)[:only] || [:create, :delete, :list, :retrieve, :update]
       @_schema unquote(opts)[:schema] || __MODULE__
+      @_sorts unquote(opts)[:sorts] || []
       @before_compile unquote(__MODULE__)
 
       use Ecto.Schema
@@ -21,10 +22,11 @@ defmodule Paloma do
     filters = Module.get_attribute(env.module, :_filters)
     only = Module.get_attribute(env.module, :_only)
     schema = Module.get_attribute(env.module, :_schema)
-    compile(filters, only, schema)
+    sorts = Module.get_attribute(env.module, :_sorts)
+    compile(filters, only, schema, sorts)
   end
 
-  defp compile(filters, only, schema) do
+  defp compile(filters, only, schema, sorts) do
     quote do
       if :create in unquote(only) do
         def create(%{} = params) do
@@ -78,6 +80,7 @@ defmodule Paloma do
           resources =
             unquote(schema)
             |> Paloma.Filter.call(unquote(filters), opts)
+            |> Paloma.Sort.call(unquote(sorts), opts)
             |> repo().paginate(page: opts[:page], page_size: opts[:page_size])
 
           {:ok, resources}

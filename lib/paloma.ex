@@ -28,6 +28,11 @@ defmodule Paloma do
 
   defp compile(filters, only, schema, sorts) do
     quote do
+      def __paloma__(:filters), do: unquote(filters)
+      def __paloma__(:functions), do: unquote(only)
+      def __paloma__(:schema), do: unquote(schema)
+      def __paloma__(:sorts), do: unquote(sorts)
+
       if :create in unquote(only) do
         def create(%{} = params) do
           unquote(schema)

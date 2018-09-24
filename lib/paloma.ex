@@ -172,7 +172,13 @@ defmodule Paloma do
         |> repo().one()
       end
 
-      defp repo(), do: Application.fetch_env!(:paloma, :repo)
+      defp repo() do
+        Mix.Project.config()
+        |> Keyword.fetch!(:app)
+        |> Application.fetch_env(Paloma)
+        |> elem(1)
+        |> Keyword.fetch!(:repo)
+      end
     end
   end
 end

@@ -16,6 +16,12 @@ defmodule PalomaTest do
       assert Tree.__paloma__(:functions) == [:create, :delete, :list, :retrieve, :update]
     end
 
+    test "returns paloma repo configuration" do
+      assert Beach.__paloma__(:repo) == Paloma.Test.Repo
+      assert Cloud.__paloma__(:repo) == Paloma.Test.Repo
+      assert Tree.__paloma__(:repo) == Paloma.Test.Repo
+    end
+
     test "returns paloma schema configuration" do
       assert Beach.__paloma__(:schema) == Beach
       assert Cloud.__paloma__(:schema) == Cloud

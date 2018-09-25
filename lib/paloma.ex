@@ -8,6 +8,7 @@ defmodule Paloma do
     quote do
       @_filters unquote(opts)[:filters] || []
       @_only unquote(opts)[:only] || [:create, :delete, :list, :retrieve, :update]
+      @_repo unquote(opts)[:repo]
       @_schema unquote(opts)[:schema] || __MODULE__
       @_sorts unquote(opts)[:sorts] || []
       @before_compile unquote(__MODULE__)
@@ -21,15 +22,17 @@ defmodule Paloma do
   defmacro __before_compile__(env) do
     filters = Module.get_attribute(env.module, :_filters)
     only = Module.get_attribute(env.module, :_only)
+    repo = Module.get_attribute(env.module, :_repo)
     schema = Module.get_attribute(env.module, :_schema)
     sorts = Module.get_attribute(env.module, :_sorts)
-    compile(filters, only, schema, sorts)
+    compile(filters, only, repo, schema, sorts)
   end
 
-  defp compile(filters, only, schema, sorts) do
+  defp compile(filters, only, repo, schema, sorts) do
     quote do
       def __paloma__(:filters), do: unquote(filters)
       def __paloma__(:functions), do: unquote(only)
+      def __paloma__(:repo), do: unquote(repo)
       def __paloma__(:schema), do: unquote(schema)
       def __paloma__(:sorts), do: unquote(sorts)
 
@@ -38,7 +41,7 @@ defmodule Paloma do
           unquote(schema)
           |> struct(%{})
           |> unquote(schema).changeset(params)
-          |> repo().insert()
+          |> unquote(repo).insert()
         end
 
         def create(_), do: {:error, :bad_request}
@@ -53,7 +56,7 @@ defmodule Paloma do
         end
 
         def delete(id) when is_integer(id) do
-          case repo().get(unquote(schema), id) do
+          case unquote(repo).get(unquote(schema), id) do
             %{__struct__: unquote(schema)} = resource ->
               delete(resource)
 
@@ -74,7 +77,7 @@ defmodule Paloma do
         end
 
         def delete(%{__struct__: unquote(schema)} = resource) do
-          repo().delete(resource)
+          unquote(repo).delete(resource)
         end
 
         def delete(_), do: {:error, :bad_request}
@@ -86,7 +89,7 @@ defmodule Paloma do
             unquote(schema)
             |> Paloma.Filter.call(unquote(filters), opts)
             |> Paloma.Sort.call(unquote(sorts), opts)
-            |> repo().paginate(page: opts[:page], page_size: opts[:page_size])
+            |> unquote(repo).paginate(page: opts[:page], page_size: opts[:page_size])
 
           {:ok, resources}
         end
@@ -101,7 +104,7 @@ defmodule Paloma do
         end
 
         def retrieve(id) when is_integer(id) do
-          case repo().get(unquote(schema), id) do
+          case unquote(repo).get(unquote(schema), id) do
             %{__struct__: unquote(schema)} = resource -> {:ok, resource}
             _ -> {:error, :not_found}
           end
@@ -130,7 +133,7 @@ defmodule Paloma do
         end
 
         def update(id, %{} = params) when is_integer(id) do
-          case repo().get(unquote(schema), id) do
+          case unquote(repo).get(unquote(schema), id) do
             %{__struct__: unquote(schema)} = resource ->
               update(resource, params)
 
@@ -153,7 +156,7 @@ defmodule Paloma do
         def update(%{__struct__: unquote(schema)} = resource, %{} = params) do
           resource
           |> unquote(schema).changeset(params)
-          |> repo().update()
+          |> unquote(repo).update()
         end
 
         def update(_, _), do: {:error, :bad_request}
@@ -169,15 +172,7 @@ defmodule Paloma do
       defp get_by_filters(opts) do
         unquote(schema)
         |> Paloma.Filter.call(unquote(filters), opts)
-        |> repo().one()
-      end
-
-      defp repo() do
-        Mix.Project.config()
-        |> Keyword.fetch!(:app)
-        |> Application.fetch_env(Paloma)
-        |> elem(1)
-        |> Keyword.fetch!(:repo)
+        |> unquote(repo).one()
       end
     end
   end

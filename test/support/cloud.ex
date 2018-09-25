@@ -1,5 +1,5 @@
 defmodule Paloma.Test.Cloud do
-  use Paloma, only: []
+  use Resource, only: []
 
   schema "clouds" do
     field(:color, :string)

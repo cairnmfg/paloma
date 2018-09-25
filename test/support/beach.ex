@@ -1,5 +1,5 @@
 defmodule Paloma.Test.Beach do
-  use Paloma
+  use Resource
 
   schema "beaches" do
     field(:name, :string)

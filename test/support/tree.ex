@@ -1,5 +1,5 @@
 defmodule Paloma.Test.Tree do
-  use Paloma, filters: ~w(bark_color height name)a, sorts: ~w(id name)a
+  use Resource, filters: ~w(bark_color height name)a, sorts: ~w(id name)a
 
   schema "trees" do
     field(:bark_color, :string)

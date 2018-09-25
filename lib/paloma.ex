@@ -8,9 +8,9 @@ defmodule Paloma do
     quote do
       @_filters unquote(opts)[:filters] || []
       @_only unquote(opts)[:only] || [:create, :delete, :list, :retrieve, :update]
+      @_repo unquote(opts)[:repo]
       @_schema unquote(opts)[:schema] || __MODULE__
       @_sorts unquote(opts)[:sorts] || []
-      @_repo unquote(opts)[:repo]
       @before_compile unquote(__MODULE__)
 
       use Ecto.Schema

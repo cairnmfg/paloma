@@ -7,7 +7,7 @@ defmodule PalomaTest do
     test "returns paloma filters configuration" do
       assert Beach.__paloma__(:filters) == []
       assert Cloud.__paloma__(:filters) == []
-      assert Tree.__paloma__(:filters) == [:bark_color, :height, :name]
+      assert Tree.__paloma__(:filters) == [:bark_color, :height, :id, :name]
     end
 
     test "returns paloma functions configuration" do
@@ -229,18 +229,25 @@ defmodule PalomaTest do
       assert result.height == 11
     end
 
+    test "returns a not found error tuple when no resources match" do
+      create(:tree, %{name: "Willow"})
+      {:error, :not_found} = Tree.retrieve(name: [equal: "Birch"])
+    end
+
+    test "returns a bad_request error tuple when filter value is the wrong type" do
+      create(:tree)
+      {:error, :bad_request} = Tree.retrieve(id: [equal: "Birch"])
+    end
+
     test "returns a bad_request error tuple when filters are not defined" do
       create(:beach, %{name: "Birch"})
       {:error, :bad_request} = Beach.retrieve(name: [equal: "Birch"])
     end
 
-    test "returns error for multiple matching results" do
+    test "returns a bad_request error tuple for multiple matching results" do
       create(:tree, %{name: "Birch"})
       create(:tree, %{name: "Birch"})
-
-      assert_raise Ecto.MultipleResultsError, fn ->
-        Tree.retrieve(name: [equal: "Birch"])
-      end
+      {:error, :bad_request} = Tree.retrieve(name: [equal: "Birch"])
     end
   end
 

@@ -116,7 +116,8 @@ defmodule Paloma do
             |> get_by_filters()
             |> case do
               %{__struct__: unquote(schema)} = resource -> {:ok, resource}
-              _ -> {:error, :not_found}
+              nil -> {:error, :not_found}
+              error -> error
             end
           end
         end
@@ -170,9 +171,13 @@ defmodule Paloma do
       end
 
       defp get_by_filters(opts) do
-        unquote(schema)
-        |> Paloma.Filter.call(unquote(filters), opts)
-        |> unquote(repo).one()
+        try do
+          unquote(schema)
+          |> Paloma.Filter.call(unquote(filters), opts)
+          |> unquote(repo).one()
+        rescue
+          _e -> {:error, :bad_request}
+        end
       end
     end
   end

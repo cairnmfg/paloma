@@ -161,6 +161,45 @@ defmodule PalomaTest do
       assert Enum.member?(results, tree3)
     end
 
+    test "supports filtering by list membership" do
+      {:ok, tree1} = create(:tree, %{bark_color: "gray", name: "Birch", height: 5})
+      {:ok, tree2} = create(:tree, %{bark_color: "brown", name: "Walnut", height: 10})
+      {:ok, tree3} = create(:tree, %{bark_color: "gray", name: "Oak", height: 15})
+      {:ok, tree4} = create(:tree, %{name: "Maple", height: 5})
+      {:ok, page} = Tree.list(name: [equal: ["Willow"]])
+      assert page.entries == []
+      {:ok, %{entries: results}} = Tree.list(name: [equal: ["Oak", "Walnut"]])
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      refute Enum.member?(results, tree4)
+      {:ok, %{entries: results}} = Tree.list(height: [equal: [5, 10]])
+      assert Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+      assert Enum.member?(results, tree4)
+    end
+
+    test "supports filtering nil values" do
+      {:ok, tree1} = create(:tree, %{bark_color: "gray", name: "Birch", height: 5})
+      {:ok, tree2} = create(:tree, %{bark_color: "brown", name: "Walnut", height: 10})
+      {:ok, tree3} = create(:tree, %{bark_color: "gray", name: "Oak", height: 15})
+      {:ok, tree4} = create(:tree, %{name: "Maple", height: 5})
+      {:ok, tree5} = create(:tree, %{name: "Bonzai", height: nil})
+      {:ok, %{entries: results}} = Tree.list(height: [equal: nil])
+      refute Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+      refute Enum.member?(results, tree4)
+      assert Enum.member?(results, tree5)
+      {:ok, %{entries: results}} = Tree.list(height: [not_equal: nil])
+      assert Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      assert Enum.member?(results, tree4)
+      refute Enum.member?(results, tree5)
+    end
+
     test "sorts results by desc ID by default" do
       {:ok, beach1} = create(:beach)
       {:ok, beach2} = create(:beach)

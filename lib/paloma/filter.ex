@@ -30,11 +30,17 @@ defmodule Paloma.Filter do
   defp dynamic_query(:equal, attr, values) when is_list(values),
     do: dynamic([q], field(q, ^attr) in ^values)
 
+  defp dynamic_query(:equal, attr, value) when is_nil(value),
+    do: dynamic([q], is_nil(field(q, ^attr)))
+
   defp dynamic_query(:not_equal, attr, value) when is_binary(value) or is_integer(value),
     do: dynamic([q], field(q, ^attr) != ^value)
 
   defp dynamic_query(:not_equal, attr, values) when is_list(values),
     do: dynamic([q], field(q, ^attr) not in ^values)
+
+  defp dynamic_query(:not_equal, attr, value) when is_nil(value),
+    do: dynamic([q], not is_nil(field(q, ^attr)))
 
   defp filters_for(whitelisted_fields, type) do
     whitelisted_fields
@@ -48,6 +54,7 @@ defmodule Paloma.Filter do
   defp present?(list) when is_list(list), do: length(list) > 0
   defp present?(value) when is_binary(value), do: String.length(value) > 0
   defp present?(value) when is_integer(value), do: true
+  defp present?(value) when is_nil(value), do: true
   defp present?(_), do: false
 
   defp sanitize(keyword_list, fields) do

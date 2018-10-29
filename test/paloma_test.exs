@@ -1,9 +1,14 @@
 defmodule PalomaTest do
-  alias Paloma.Test.{Beach, Cloud, Repo, Tree}
+  alias Paloma.Test.{Beach, Cloud, Publisher, Repo, River, Tree}
 
   use Paloma.Test.DataCase
 
   describe "__paloma__/1" do
+    test "returns paloma broadcast_to configuration" do
+      assert Beach.__paloma__(:broadcast_to) == &Paloma.Broadcast.call/3
+      assert River.__paloma__(:broadcast_to) == &Paloma.Test.Publisher.call/3
+    end
+
     test "returns paloma filters configuration" do
       assert Beach.__paloma__(:filters) == []
       assert Cloud.__paloma__(:filters) == []
@@ -46,6 +51,20 @@ defmodule PalomaTest do
       assert resource.name == "Mala"
     end
 
+    test "publishes change" do
+      Publisher.start_link([])
+      {:ok, resource} = River.create(%{name: "Wabash"})
+      [{River, :create, {:ok, %River{} = river}}] = Publisher.get()
+      assert resource.id == river.id
+    end
+
+    test "publishes change for changeset failure" do
+      Publisher.start_link([])
+      {:error, _changeset} = River.create(%{name: ""})
+      [{River, :create, {:error, changeset}}] = Publisher.get()
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
+    end
+
     test "returns a bad request error tuple for the wrong type of arguments" do
       {:error, :bad_request} = Beach.create("bogus")
     end
@@ -76,6 +95,16 @@ defmodule PalomaTest do
       {:ok, resource} = Beach.delete("#{beach.id}")
       assert resource.id == beach.id
       {:error, :not_found} = Beach.retrieve(beach.id)
+    end
+
+    test "publishes change" do
+      Publisher.start_link([])
+      {:ok, river} = create(:river)
+      {:ok, resource} = River.delete(river)
+      assert resource.id == river.id
+      {:error, :not_found} = River.retrieve(river.id)
+      [{River, :delete, {:ok, %River{} = resource}}] = Publisher.get()
+      assert resource.id == river.id
     end
 
     test "returns a bad request error tuple for the wrong type of arguments" do
@@ -305,6 +334,22 @@ defmodule PalomaTest do
       assert beach.name == result.name
     end
 
+    test "publishes change" do
+      Publisher.start_link([])
+      {:ok, river} = create(:river)
+      {:ok, _result} = River.update(river.id, %{name: "updated"})
+      [{River, :update, {:ok, %River{} = resource}}] = Publisher.get()
+      assert resource.id == river.id
+    end
+
+    test "publishes change for changeset failure" do
+      Publisher.start_link([])
+      {:ok, river} = create(:river)
+      {:error, _changeset} = River.update(river.id, %{name: ""})
+      [{River, :update, {:error, changeset}}] = Publisher.get()
+      assert %{name: ["can't be blank"]} = errors_on(changeset)
+    end
+
     test "returns a changeset error tuple" do
       {:ok, beach} = create(:beach)
       {:error, changeset} = Beach.update("#{beach.id}", %{name: ""})
@@ -335,6 +380,12 @@ defmodule PalomaTest do
   defp create(:cloud, data) do
     %Cloud{}
     |> Cloud.changeset(Map.merge(%{color: "Gray", name: "Wall"}, data))
+    |> Repo.insert()
+  end
+
+  defp create(:river, data) do
+    %River{}
+    |> River.changeset(Map.merge(%{name: "Atchafalaya"}, data))
     |> Repo.insert()
   end
 

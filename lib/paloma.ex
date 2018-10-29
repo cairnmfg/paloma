@@ -6,6 +6,7 @@ defmodule Paloma do
   @doc false
   defmacro __using__(opts) do
     quote do
+      @_broadcast unquote(opts)[:broadcast] || (&Paloma.Broadcast.broadcast/3)
       @_filters unquote(opts)[:filters] || []
       @_only unquote(opts)[:only] || [:create, :delete, :list, :retrieve, :update]
       @_repo unquote(opts)[:repo]
@@ -20,16 +21,18 @@ defmodule Paloma do
 
   @doc false
   defmacro __before_compile__(env) do
+    broadcast = Module.get_attribute(env.module, :_broadcast)
     filters = Module.get_attribute(env.module, :_filters)
     only = Module.get_attribute(env.module, :_only)
     repo = Module.get_attribute(env.module, :_repo)
     schema = Module.get_attribute(env.module, :_schema)
     sorts = Module.get_attribute(env.module, :_sorts)
-    compile(filters, only, repo, schema, sorts)
+    compile(broadcast, filters, only, repo, schema, sorts)
   end
 
-  defp compile(filters, only, repo, schema, sorts) do
+  defp compile(broadcast, filters, only, repo, schema, sorts) do
     quote do
+      def __paloma__(:broadcast), do: unquote(broadcast)
       def __paloma__(:filters), do: unquote(filters)
       def __paloma__(:functions), do: unquote(only)
       def __paloma__(:repo), do: unquote(repo)
@@ -42,6 +45,7 @@ defmodule Paloma do
           |> struct(%{})
           |> unquote(schema).changeset(params)
           |> unquote(repo).insert()
+          |> broadcast(:create)
         end
 
         def create(_), do: {:error, :bad_request}
@@ -77,7 +81,9 @@ defmodule Paloma do
         end
 
         def delete(%{__struct__: unquote(schema)} = resource) do
-          unquote(repo).delete(resource)
+          resource
+          |> unquote(repo).delete()
+          |> broadcast(:delete)
         end
 
         def delete(_), do: {:error, :bad_request}
@@ -158,10 +164,13 @@ defmodule Paloma do
           resource
           |> unquote(schema).changeset(params)
           |> unquote(repo).update()
+          |> broadcast(:update)
         end
 
         def update(_, _), do: {:error, :bad_request}
       end
+
+      defp broadcast(result, change), do: unquote(broadcast).(unquote(schema), change, result)
 
       defp cast_id(value) do
         case Integer.parse(value) do

@@ -6,7 +6,7 @@ defmodule Paloma do
   @doc false
   defmacro __using__(opts) do
     quote do
-      @_broadcast_to unquote(opts)[:broadcast_to] || (&Paloma.Broadcast.broadcast/3)
+      @_broadcast unquote(opts)[:broadcast] || (&Paloma.Broadcast.broadcast/3)
       @_filters unquote(opts)[:filters] || []
       @_only unquote(opts)[:only] || [:create, :delete, :list, :retrieve, :update]
       @_repo unquote(opts)[:repo]
@@ -21,18 +21,18 @@ defmodule Paloma do
 
   @doc false
   defmacro __before_compile__(env) do
-    broadcast_to = Module.get_attribute(env.module, :_broadcast_to)
+    broadcast = Module.get_attribute(env.module, :_broadcast)
     filters = Module.get_attribute(env.module, :_filters)
     only = Module.get_attribute(env.module, :_only)
     repo = Module.get_attribute(env.module, :_repo)
     schema = Module.get_attribute(env.module, :_schema)
     sorts = Module.get_attribute(env.module, :_sorts)
-    compile(broadcast_to, filters, only, repo, schema, sorts)
+    compile(broadcast, filters, only, repo, schema, sorts)
   end
 
-  defp compile(broadcast_to, filters, only, repo, schema, sorts) do
+  defp compile(broadcast, filters, only, repo, schema, sorts) do
     quote do
-      def __paloma__(:broadcast_to), do: unquote(broadcast_to)
+      def __paloma__(:broadcast), do: unquote(broadcast)
       def __paloma__(:filters), do: unquote(filters)
       def __paloma__(:functions), do: unquote(only)
       def __paloma__(:repo), do: unquote(repo)
@@ -170,7 +170,7 @@ defmodule Paloma do
         def update(_, _), do: {:error, :bad_request}
       end
 
-      defp broadcast(result, change), do: unquote(broadcast_to).(unquote(schema), change, result)
+      defp broadcast(result, change), do: unquote(broadcast).(unquote(schema), change, result)
 
       defp cast_id(value) do
         case Integer.parse(value) do

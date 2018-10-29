@@ -5,8 +5,8 @@ defmodule PalomaTest do
 
   describe "__paloma__/1" do
     test "returns paloma broadcast_to configuration" do
-      assert Beach.__paloma__(:broadcast_to) == (&Paloma.Broadcast.broadcast/3)
-      assert River.__paloma__(:broadcast_to) == (&Paloma.Test.Publisher.broadcast/3)
+      assert Beach.__paloma__(:broadcast) == (&Paloma.Broadcast.broadcast/3)
+      assert River.__paloma__(:broadcast) == (&Paloma.Test.Publisher.broadcast/3)
     end
 
     test "returns paloma filters configuration" do

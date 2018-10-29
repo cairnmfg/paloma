@@ -6,7 +6,7 @@ defmodule Paloma do
   @doc false
   defmacro __using__(opts) do
     quote do
-      @_broadcast_to unquote(opts)[:broadcast_to] || &Paloma.Broadcast.call/3
+      @_broadcast_to unquote(opts)[:broadcast_to] || (&Paloma.Broadcast.broadcast/3)
       @_filters unquote(opts)[:filters] || []
       @_only unquote(opts)[:only] || [:create, :delete, :list, :retrieve, :update]
       @_repo unquote(opts)[:repo]

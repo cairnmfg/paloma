@@ -229,6 +229,34 @@ defmodule PalomaTest do
       refute Enum.member?(results, tree5)
     end
 
+    test "supports filtering by greater_than and less_than" do
+      {:ok, tree1} = create(:tree, %{height: 5})
+      {:ok, tree2} = create(:tree, %{height: 10})
+      {:ok, tree3} = create(:tree, %{height: 15})
+      {:ok, %{entries: results}} = Tree.list(height: [greater_than: 10])
+      refute Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(height: [less_than: 10])
+      assert Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+    end
+
+    test "supports filtering by greater_than_or_equal_to and less_than_or_equal_to" do
+      {:ok, tree1} = create(:tree, %{height: 5})
+      {:ok, tree2} = create(:tree, %{height: 10})
+      {:ok, tree3} = create(:tree, %{height: 15})
+      {:ok, %{entries: results}} = Tree.list(height: [greater_than_or_equal_to: 10])
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(height: [less_than_or_equal_to: 10])
+      assert Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+    end
+
     test "sorts results by desc ID by default" do
       {:ok, beach1} = create(:beach)
       {:ok, beach2} = create(:beach)

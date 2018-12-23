@@ -6,9 +6,20 @@ defmodule Paloma.Filter do
   import Ecto.Query
 
   def call(query, fields, opts) do
-    equal = extract_filters(opts, :equal_to, fields)
-    not_equal = extract_filters(opts, :not_equal_to, fields)
-    Enum.reduce(equal ++ not_equal, query, fn q, acc -> where(acc, ^q) end)
+    equal_to = extract_filters(opts, :equal_to, fields)
+    greater_than = extract_filters(opts, :greater_than, fields)
+    greater_than_or_equal_to = extract_filters(opts, :greater_than_or_equal_to, fields)
+    less_than = extract_filters(opts, :less_than, fields)
+    less_than_or_equal_to = extract_filters(opts, :less_than_or_equal_to, fields)
+    not_equal_to = extract_filters(opts, :not_equal_to, fields)
+
+    Enum.reduce(
+      equal_to ++
+        greater_than ++
+        greater_than_or_equal_to ++ less_than ++ less_than_or_equal_to ++ not_equal_to,
+      query,
+      fn q, acc -> where(acc, ^q) end
+    )
   end
 
   defp allowed?(fields, key), do: key in fields
@@ -20,7 +31,15 @@ defmodule Paloma.Filter do
     |> dynamic_query(type)
   end
 
-  defp dynamic_query(filters, type) when type in [:equal_to, :not_equal_to] do
+  defp dynamic_query(filters, type)
+       when type in [
+              :equal_to,
+              :greater_than,
+              :greater_than_or_equal_to,
+              :less_than,
+              :less_than_or_equal_to,
+              :not_equal_to
+            ] do
     for {attr, values} <- filters, present?(values), do: dynamic_query(type, attr, values)
   end
 
@@ -35,6 +54,18 @@ defmodule Paloma.Filter do
 
   defp dynamic_query(:not_equal_to, attr, value) when is_binary(value) or is_integer(value),
     do: dynamic([q], field(q, ^attr) != ^value)
+
+  defp dynamic_query(:greater_than, attr, value),
+    do: dynamic([q], field(q, ^attr) > ^value)
+
+  defp dynamic_query(:greater_than_or_equal_to, attr, value),
+    do: dynamic([q], field(q, ^attr) >= ^value)
+
+  defp dynamic_query(:less_than, attr, value),
+    do: dynamic([q], field(q, ^attr) < ^value)
+
+  defp dynamic_query(:less_than_or_equal_to, attr, value),
+    do: dynamic([q], field(q, ^attr) <= ^value)
 
   defp dynamic_query(:not_equal_to, attr, values) when is_list(values),
     do: dynamic([q], field(q, ^attr) not in ^values)

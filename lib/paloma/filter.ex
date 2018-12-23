@@ -6,8 +6,8 @@ defmodule Paloma.Filter do
   import Ecto.Query
 
   def call(query, fields, opts) do
-    equal = extract_filters(opts, :equal, fields)
-    not_equal = extract_filters(opts, :not_equal, fields)
+    equal = extract_filters(opts, :equal_to, fields)
+    not_equal = extract_filters(opts, :not_equal_to, fields)
     Enum.reduce(equal ++ not_equal, query, fn q, acc -> where(acc, ^q) end)
   end
 
@@ -20,26 +20,26 @@ defmodule Paloma.Filter do
     |> dynamic_query(type)
   end
 
-  defp dynamic_query(filters, type) when type in [:equal, :not_equal] do
+  defp dynamic_query(filters, type) when type in [:equal_to, :not_equal_to] do
     for {attr, values} <- filters, present?(values), do: dynamic_query(type, attr, values)
   end
 
-  defp dynamic_query(:equal, attr, value) when is_binary(value) or is_integer(value),
+  defp dynamic_query(:equal_to, attr, value) when is_binary(value) or is_integer(value),
     do: dynamic([q], field(q, ^attr) == ^value)
 
-  defp dynamic_query(:equal, attr, values) when is_list(values),
+  defp dynamic_query(:equal_to, attr, values) when is_list(values),
     do: dynamic([q], field(q, ^attr) in ^values)
 
-  defp dynamic_query(:equal, attr, value) when is_nil(value),
+  defp dynamic_query(:equal_to, attr, value) when is_nil(value),
     do: dynamic([q], is_nil(field(q, ^attr)))
 
-  defp dynamic_query(:not_equal, attr, value) when is_binary(value) or is_integer(value),
+  defp dynamic_query(:not_equal_to, attr, value) when is_binary(value) or is_integer(value),
     do: dynamic([q], field(q, ^attr) != ^value)
 
-  defp dynamic_query(:not_equal, attr, values) when is_list(values),
+  defp dynamic_query(:not_equal_to, attr, values) when is_list(values),
     do: dynamic([q], field(q, ^attr) not in ^values)
 
-  defp dynamic_query(:not_equal, attr, value) when is_nil(value),
+  defp dynamic_query(:not_equal_to, attr, value) when is_nil(value),
     do: dynamic([q], not is_nil(field(q, ^attr)))
 
   defp filters_for(whitelisted_fields, type) do

@@ -125,7 +125,7 @@ defmodule PalomaTest do
       {:ok, tree} = create(:tree, %{name: "Willow"})
       create(:tree)
       {:ok, _resource} = Tree.retrieve(tree.id)
-      {:ok, resource} = Tree.delete(name: [equal: tree.name])
+      {:ok, resource} = Tree.delete(name: [equal_to: tree.name])
       assert resource.id == tree.id
       {:error, :not_found} = Tree.retrieve(tree.id)
     end
@@ -165,25 +165,25 @@ defmodule PalomaTest do
       {:ok, tree1} = create(:tree, %{bark_color: "gray", name: "Birch"})
       {:ok, tree2} = create(:tree, %{bark_color: "brown", name: "Walnut"})
       {:ok, tree3} = create(:tree, %{bark_color: "gray", name: "Oak"})
-      {:ok, page} = Tree.list(name: [equal: "Willow"])
+      {:ok, page} = Tree.list(name: [equal_to: "Willow"])
       assert page.entries == []
-      {:ok, %{entries: [result]}} = Tree.list(name: [equal: "Birch"])
+      {:ok, %{entries: [result]}} = Tree.list(name: [equal_to: "Birch"])
       assert result == tree1
-      {:ok, %{entries: results}} = Tree.list(name: [equal: ["Birch", "Oak"]])
+      {:ok, %{entries: results}} = Tree.list(name: [equal_to: ["Birch", "Oak"]])
       assert Enum.member?(results, tree1)
       refute Enum.member?(results, tree2)
       assert Enum.member?(results, tree3)
-      {:ok, %{entries: results}} = Tree.list(name: [not_equal: "Birch"])
+      {:ok, %{entries: results}} = Tree.list(name: [not_equal_to: "Birch"])
       refute Enum.member?(results, tree1)
       assert Enum.member?(results, tree2)
       assert Enum.member?(results, tree3)
-      {:ok, %{entries: results}} = Tree.list(name: [not_equal: ["Birch", "Oak"]])
+      {:ok, %{entries: results}} = Tree.list(name: [not_equal_to: ["Birch", "Oak"]])
       refute Enum.member?(results, tree1)
       assert Enum.member?(results, tree2)
       refute Enum.member?(results, tree3)
 
       {:ok, %{entries: results}} =
-        Tree.list(bark_color: [equal: "gray"], name: [not_equal: "Birch"])
+        Tree.list(bark_color: [equal_to: "gray"], name: [not_equal_to: "Birch"])
 
       refute Enum.member?(results, tree1)
       refute Enum.member?(results, tree2)
@@ -195,14 +195,14 @@ defmodule PalomaTest do
       {:ok, tree2} = create(:tree, %{bark_color: "brown", name: "Walnut", height: 10})
       {:ok, tree3} = create(:tree, %{bark_color: "gray", name: "Oak", height: 15})
       {:ok, tree4} = create(:tree, %{name: "Maple", height: 5})
-      {:ok, page} = Tree.list(name: [equal: ["Willow"]])
+      {:ok, page} = Tree.list(name: [equal_to: ["Willow"]])
       assert page.entries == []
-      {:ok, %{entries: results}} = Tree.list(name: [equal: ["Oak", "Walnut"]])
+      {:ok, %{entries: results}} = Tree.list(name: [equal_to: ["Oak", "Walnut"]])
       refute Enum.member?(results, tree1)
       assert Enum.member?(results, tree2)
       assert Enum.member?(results, tree3)
       refute Enum.member?(results, tree4)
-      {:ok, %{entries: results}} = Tree.list(height: [equal: [5, 10]])
+      {:ok, %{entries: results}} = Tree.list(height: [equal_to: [5, 10]])
       assert Enum.member?(results, tree1)
       assert Enum.member?(results, tree2)
       refute Enum.member?(results, tree3)
@@ -215,18 +215,46 @@ defmodule PalomaTest do
       {:ok, tree3} = create(:tree, %{bark_color: "gray", name: "Oak", height: 15})
       {:ok, tree4} = create(:tree, %{name: "Maple", height: 5})
       {:ok, tree5} = create(:tree, %{name: "Bonzai", height: nil})
-      {:ok, %{entries: results}} = Tree.list(height: [equal: nil])
+      {:ok, %{entries: results}} = Tree.list(height: [equal_to: nil])
       refute Enum.member?(results, tree1)
       refute Enum.member?(results, tree2)
       refute Enum.member?(results, tree3)
       refute Enum.member?(results, tree4)
       assert Enum.member?(results, tree5)
-      {:ok, %{entries: results}} = Tree.list(height: [not_equal: nil])
+      {:ok, %{entries: results}} = Tree.list(height: [not_equal_to: nil])
       assert Enum.member?(results, tree1)
       assert Enum.member?(results, tree2)
       assert Enum.member?(results, tree3)
       assert Enum.member?(results, tree4)
       refute Enum.member?(results, tree5)
+    end
+
+    test "supports filtering by greater_than and less_than" do
+      {:ok, tree1} = create(:tree, %{height: 5})
+      {:ok, tree2} = create(:tree, %{height: 10})
+      {:ok, tree3} = create(:tree, %{height: 15})
+      {:ok, %{entries: results}} = Tree.list(height: [greater_than: 10])
+      refute Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(height: [less_than: 10])
+      assert Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+    end
+
+    test "supports filtering by greater_than_or_equal_to and less_than_or_equal_to" do
+      {:ok, tree1} = create(:tree, %{height: 5})
+      {:ok, tree2} = create(:tree, %{height: 10})
+      {:ok, tree3} = create(:tree, %{height: 15})
+      {:ok, %{entries: results}} = Tree.list(height: [greater_than_or_equal_to: 10])
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(height: [less_than_or_equal_to: 10])
+      assert Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
     end
 
     test "sorts results by desc ID by default" do
@@ -292,30 +320,30 @@ defmodule PalomaTest do
     test "returns a resource tuple when filters are defined" do
       create(:tree, %{name: "Birch", height: 11})
       create(:tree, %{name: "Willow", height: 11})
-      {:ok, result} = Tree.retrieve(name: [equal: "Birch"], height: [equal: 11])
+      {:ok, result} = Tree.retrieve(name: [equal_to: "Birch"], height: [equal_to: 11])
       assert result.name == "Birch"
       assert result.height == 11
     end
 
     test "returns a not found error tuple when no resources match" do
       create(:tree, %{name: "Willow"})
-      {:error, :not_found} = Tree.retrieve(name: [equal: "Birch"])
+      {:error, :not_found} = Tree.retrieve(name: [equal_to: "Birch"])
     end
 
     test "returns a bad_request error tuple when filter value is the wrong type" do
       create(:tree)
-      {:error, :bad_request} = Tree.retrieve(id: [equal: "Birch"])
+      {:error, :bad_request} = Tree.retrieve(id: [equal_to: "Birch"])
     end
 
     test "returns a bad_request error tuple when filters are not defined" do
       create(:beach, %{name: "Birch"})
-      {:error, :bad_request} = Beach.retrieve(name: [equal: "Birch"])
+      {:error, :bad_request} = Beach.retrieve(name: [equal_to: "Birch"])
     end
 
     test "returns a bad_request error tuple for multiple matching results" do
       create(:tree, %{name: "Birch"})
       create(:tree, %{name: "Birch"})
-      {:error, :bad_request} = Tree.retrieve(name: [equal: "Birch"])
+      {:error, :bad_request} = Tree.retrieve(name: [equal_to: "Birch"])
     end
   end
 

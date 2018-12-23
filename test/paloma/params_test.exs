@@ -19,25 +19,25 @@ defmodule Paloma.ParamsTest do
     end
 
     test "returns filters and sorts from whitelist" do
-      filters = [bark_color: ["equal", "not_equal"], roots: ["equal", "not_equal"]]
+      filters = [bark_color: ["equal_to", "not_equal_to"], roots: ["equal_to", "not_equal_to"]]
 
       params = %{
-        "bark_color" => %{"equal" => "Green"},
-        "leaf_type" => %{"equal" => "broad"},
+        "bark_color" => %{"equal_to" => "Green"},
+        "leaf_type" => %{"equal_to" => "broad"},
         "roots" => %{"bogus" => ["deep"]},
         "sort" => %{"asc" => "name", "bogus" => "height"}
       }
 
       sorts = ~w(name)
       result = Params.convert(params, filters: filters, sorts: sorts, paginate: false)
-      assert result == [sort: {:asc, :name}, roots: [], bark_color: [equal: "Green"]]
+      assert result == [sort: {:asc, :name}, roots: [], bark_color: [equal_to: "Green"]]
     end
 
     test "supports list values for filters" do
-      filters = [roots: ["equal", "not_equal"]]
-      params = %{"roots" => %{"equal" => ["complex", "deep"]}}
+      filters = [roots: ["equal_to", "not_equal_to"]]
+      params = %{"roots" => %{"equal_to" => ["complex", "deep"]}}
       result = Params.convert(params, filters: filters, paginate: false)
-      assert result == [roots: [equal: ["complex", "deep"]]]
+      assert result == [roots: [equal_to: ["complex", "deep"]]]
     end
   end
 end

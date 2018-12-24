@@ -43,7 +43,11 @@ defmodule Paloma.Filter do
     for {attr, values} <- filters, present?(values), do: dynamic_query(type, attr, values)
   end
 
-  defp dynamic_query(:equal_to, attr, value) when is_binary(value) or is_integer(value),
+  defp dynamic_query(:equal_to, attr, value)
+       when is_binary(value) or is_boolean(value) or is_integer(value),
+       do: dynamic([q], field(q, ^attr) == ^value)
+
+  defp dynamic_query(:equal_to, attr, %NaiveDateTime{} = value),
     do: dynamic([q], field(q, ^attr) == ^value)
 
   defp dynamic_query(:equal_to, attr, values) when is_list(values),
@@ -52,20 +56,39 @@ defmodule Paloma.Filter do
   defp dynamic_query(:equal_to, attr, value) when is_nil(value),
     do: dynamic([q], is_nil(field(q, ^attr)))
 
-  defp dynamic_query(:not_equal_to, attr, value) when is_binary(value) or is_integer(value),
-    do: dynamic([q], field(q, ^attr) != ^value)
-
-  defp dynamic_query(:greater_than, attr, value),
+  defp dynamic_query(:greater_than, attr, value) when is_integer(value),
     do: dynamic([q], field(q, ^attr) > ^value)
 
-  defp dynamic_query(:greater_than_or_equal_to, attr, value),
+  defp dynamic_query(:greater_than, attr, %NaiveDateTime{} = value),
+    do: dynamic([q], field(q, ^attr) > ^value)
+
+  defp dynamic_query(:greater_than_or_equal_to, attr, value) when is_integer(value),
     do: dynamic([q], field(q, ^attr) >= ^value)
 
-  defp dynamic_query(:less_than, attr, value),
+  defp dynamic_query(:greater_than_or_equal_to, attr, %NaiveDateTime{} = value),
+    do: dynamic([q], field(q, ^attr) >= ^value)
+
+  defp dynamic_query(:less_than, attr, value) when is_integer(value),
     do: dynamic([q], field(q, ^attr) < ^value)
 
-  defp dynamic_query(:less_than_or_equal_to, attr, value),
+  defp dynamic_query(:less_than, attr, %NaiveDateTime{} = value),
+    do: dynamic([q], field(q, ^attr) < ^value)
+
+  defp dynamic_query(:less_than_or_equal_to, attr, value) when is_integer(value),
     do: dynamic([q], field(q, ^attr) <= ^value)
+
+  defp dynamic_query(:less_than_or_equal_to, attr, %NaiveDateTime{} = value),
+    do: dynamic([q], field(q, ^attr) <= ^value)
+
+  defp dynamic_query(:not_equal_to, attr, value)
+       when is_binary(value) or is_integer(value),
+       do: dynamic([q], field(q, ^attr) != ^value)
+
+  defp dynamic_query(:not_equal_to, attr, value) when is_boolean(value),
+    do: dynamic([q], field(q, ^attr) != ^value or is_nil(field(q, ^attr)))
+
+  defp dynamic_query(:not_equal_to, attr, %NaiveDateTime{} = value),
+    do: dynamic([q], field(q, ^attr) != ^value or is_nil(field(q, ^attr)))
 
   defp dynamic_query(:not_equal_to, attr, values) when is_list(values),
     do: dynamic([q], field(q, ^attr) not in ^values)
@@ -84,8 +107,10 @@ defmodule Paloma.Filter do
 
   defp present?(list) when is_list(list), do: length(list) > 0
   defp present?(value) when is_binary(value), do: String.length(value) > 0
+  defp present?(value) when is_boolean(value), do: true
   defp present?(value) when is_integer(value), do: true
   defp present?(value) when is_nil(value), do: true
+  defp present?(%NaiveDateTime{}), do: true
   defp present?(_), do: false
 
   defp sanitize(keyword_list, fields) do

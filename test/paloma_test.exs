@@ -12,7 +12,7 @@ defmodule PalomaTest do
     test "returns paloma filters configuration" do
       assert Beach.__paloma__(:filters) == []
       assert Cloud.__paloma__(:filters) == []
-      assert Tree.__paloma__(:filters) == [:bark_color, :height, :id, :name]
+      assert Tree.__paloma__(:filters) == [:bark_color, :height, :id, :name, :native, :planted_at]
     end
 
     test "returns paloma functions configuration" do
@@ -252,6 +252,190 @@ defmodule PalomaTest do
       assert Enum.member?(results, tree2)
       assert Enum.member?(results, tree3)
       {:ok, %{entries: results}} = Tree.list(height: [less_than_or_equal_to: 10])
+      assert Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+    end
+
+    test "supports filtering NaiveDateTime fields with greater_than_or_equal_to" do
+      reference_time = NaiveDateTime.utc_now()
+
+      past_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-100, :second)
+
+      future_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(100, :second)
+
+      {:ok, tree1} = create(:tree, %{planted_at: reference_time})
+      {:ok, tree2} = create(:tree, %{planted_at: past_time})
+      {:ok, tree3} = create(:tree, %{planted_at: future_time})
+      {:ok, tree4} = create(:tree, %{planted_at: nil})
+
+      {:ok, %{entries: results}} =
+        Tree.list(planted_at: [greater_than_or_equal_to: reference_time])
+
+      assert Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      refute Enum.member?(results, tree4)
+    end
+
+    test "supports filtering NaiveDateTime fields with greater_than" do
+      reference_time = NaiveDateTime.utc_now()
+
+      past_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-100, :second)
+
+      future_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(100, :second)
+
+      {:ok, tree1} = create(:tree, %{planted_at: reference_time})
+      {:ok, tree2} = create(:tree, %{planted_at: past_time})
+      {:ok, tree3} = create(:tree, %{planted_at: future_time})
+      {:ok, tree4} = create(:tree, %{planted_at: nil})
+
+      {:ok, %{entries: results}} = Tree.list(planted_at: [greater_than: reference_time])
+
+      refute Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      refute Enum.member?(results, tree4)
+    end
+
+    test "supports filtering NaiveDateTime fields with less_than_or_equal_to" do
+      reference_time = NaiveDateTime.utc_now()
+
+      past_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-100, :second)
+
+      future_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(100, :second)
+
+      {:ok, tree1} = create(:tree, %{planted_at: reference_time})
+      {:ok, tree2} = create(:tree, %{planted_at: past_time})
+      {:ok, tree3} = create(:tree, %{planted_at: future_time})
+      {:ok, tree4} = create(:tree, %{planted_at: nil})
+
+      {:ok, %{entries: results}} = Tree.list(planted_at: [less_than_or_equal_to: reference_time])
+
+      assert Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+      refute Enum.member?(results, tree4)
+    end
+
+    test "supports filtering NaiveDateTime fields with less_than" do
+      reference_time = NaiveDateTime.utc_now()
+
+      past_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-100, :second)
+
+      future_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(100, :second)
+
+      {:ok, tree1} = create(:tree, %{planted_at: reference_time})
+      {:ok, tree2} = create(:tree, %{planted_at: past_time})
+      {:ok, tree3} = create(:tree, %{planted_at: future_time})
+      {:ok, tree4} = create(:tree, %{planted_at: nil})
+
+      {:ok, %{entries: results}} = Tree.list(planted_at: [less_than: reference_time])
+
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+      refute Enum.member?(results, tree4)
+    end
+
+    test "supports filtering boolean fields with equal_to" do
+      {:ok, tree1} = create(:tree, %{native: true})
+      {:ok, tree2} = create(:tree, %{native: false})
+      {:ok, tree3} = create(:tree, %{native: nil})
+      {:ok, %{entries: results}} = Tree.list(native: [equal_to: false])
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(native: [equal_to: true])
+      assert Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(native: [equal_to: nil])
+      refute Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+    end
+
+    test "supports filtering boolean fields with not_equal_to" do
+      {:ok, tree1} = create(:tree, %{native: true})
+      {:ok, tree2} = create(:tree, %{native: false})
+      {:ok, tree3} = create(:tree, %{native: nil})
+      {:ok, %{entries: results}} = Tree.list(native: [not_equal_to: false])
+      assert Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(native: [not_equal_to: true])
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(native: [not_equal_to: nil])
+      assert Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+    end
+
+    test "supports filtering NaiveDateTime fields with equal_to" do
+      reference_time = NaiveDateTime.utc_now()
+
+      past_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-100, :second)
+
+      {:ok, tree1} = create(:tree, %{planted_at: reference_time})
+      {:ok, tree2} = create(:tree, %{planted_at: past_time})
+      {:ok, tree3} = create(:tree, %{planted_at: nil})
+      {:ok, %{entries: results}} = Tree.list(planted_at: [equal_to: reference_time])
+      assert Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(planted_at: [equal_to: past_time])
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      refute Enum.member?(results, tree3)
+      {:ok, %{entries: results}} = Tree.list(planted_at: [equal_to: nil])
+      refute Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+    end
+
+    test "supports filtering NaiveDateTime fields with not_equal_to" do
+      reference_time = NaiveDateTime.utc_now()
+
+      past_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(-100, :second)
+
+      {:ok, tree1} = create(:tree, %{planted_at: reference_time})
+      {:ok, tree2} = create(:tree, %{planted_at: past_time})
+      {:ok, tree3} = create(:tree, %{planted_at: nil})
+
+      {:ok, %{entries: results}} = Tree.list(planted_at: [not_equal_to: reference_time])
+      refute Enum.member?(results, tree1)
+      assert Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+
+      {:ok, %{entries: results}} = Tree.list(planted_at: [not_equal_to: past_time])
+      assert Enum.member?(results, tree1)
+      refute Enum.member?(results, tree2)
+      assert Enum.member?(results, tree3)
+
+      {:ok, %{entries: results}} = Tree.list(planted_at: [not_equal_to: nil])
       assert Enum.member?(results, tree1)
       assert Enum.member?(results, tree2)
       refute Enum.member?(results, tree3)

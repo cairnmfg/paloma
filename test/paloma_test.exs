@@ -152,13 +152,14 @@ defmodule PalomaTest do
     end
 
     test "paginates results" do
+      {:ok, resource} = create(:tree)
       create(:tree)
-      {:ok, page} = Tree.list(page: 2, page_size: 10)
-      assert page.entries == []
+      {:ok, page} = Tree.list(page: 2, page_size: 1)
+      assert page.entries == [resource]
       assert page.page_number == 2
-      assert page.page_size == 10
-      assert page.total_entries == 1
-      assert page.total_pages == 1
+      assert page.page_size == 1
+      assert page.total_entries == 2
+      assert page.total_pages == 2
     end
 
     test "supports filtering results by fields" do

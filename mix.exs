@@ -25,14 +25,16 @@ defmodule Paloma.MixProject do
 
   defp deps() do
     [
-      # Database wrapper for Elixir
-      {:ecto, "~> 2.2"},
+      # A toolkit for data mapping and language integrated query for Elixir
+      {:ecto, "~> 3.0"},
+      # SQL-based adapters for Ecto and database migrations
+      {:ecto_sql, "~> 3.0"},
       # Automatically run your Elixir project's tests each time you save a file
       {:mix_test_watch, "~> 0.8", only: :test, runtime: false},
       # PostgreSQL driver for Elixir
-      {:postgrex, "~> 0.13.5"},
+      {:postgrex, "~> 0.14.1"},
       # Paginate your Ecto queries with Scrivener
-      {:scrivener_ecto, "~> 1.3"}
+      {:scrivener_ecto, "~> 2.0"}
     ]
   end
 

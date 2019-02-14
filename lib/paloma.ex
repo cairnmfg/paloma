@@ -6,7 +6,7 @@ defmodule Paloma do
   @doc false
   defmacro __using__(opts) do
     quote do
-      @_broadcast unquote(opts)[:broadcast] || (&Paloma.Broadcast.broadcast/3)
+      @_broadcast unquote(opts)[:broadcast] || {Paloma.Broadcast, :broadcast}
       @_filters unquote(opts)[:filters] || []
       @_only unquote(opts)[:only] || [:create, :delete, :list, :retrieve, :update]
       @_repo unquote(opts)[:repo]
@@ -170,7 +170,10 @@ defmodule Paloma do
         def update(_, _), do: {:error, :bad_request}
       end
 
-      defp broadcast(result, change), do: unquote(broadcast).(unquote(schema), change, result)
+      defp broadcast(result, change) do
+        {module, function} = unquote(broadcast)
+        apply(module, function, [unquote(schema), change, result])
+      end
 
       defp cast_id(value) do
         case Integer.parse(value) do

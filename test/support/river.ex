@@ -1,5 +1,5 @@
 defmodule Paloma.Test.River do
-  use Resource, broadcast: &Paloma.Test.Publisher.broadcast/3
+  use Resource, broadcast: {Paloma.Test.Publisher, :broadcast}
 
   schema "rivers" do
     field(:name, :string)

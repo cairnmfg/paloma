@@ -25,7 +25,7 @@ defmodule Paloma.Broadcast do
       end
 
       defmodule MyResource do
-        use Paloma, broadcast: {CustomPublisher, :broadcast} repo: Repo
+        use Paloma, broadcast: {CustomPublisher, :broadcast}, repo: Repo
       end
   """
   @type result_to_publish :: tuple()

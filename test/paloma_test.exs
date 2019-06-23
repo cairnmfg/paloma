@@ -210,6 +210,28 @@ defmodule PalomaTest do
       assert Enum.member?(results, tree4)
     end
 
+    test "supports filtering with contains operator" do
+      Publisher.start_link([])
+      {:ok, resource1} = River.create(%{name: "Shenandoah", tags: ["tributary"]})
+      {:ok, resource2} = River.create(%{name: "Vermillion ", tags: ["tributary"]})
+      {:ok, resource3} = River.create(%{name: "Atchafalaya", tags: ["distributary"]})
+      {:ok, %{entries: results}} = River.list(tags: [contains: "tributary"])
+      assert Enum.member?(results, resource1)
+      assert Enum.member?(results, resource2)
+      refute Enum.member?(results, resource3)
+    end
+
+    test "supports filtering with not_contains operator" do
+      Publisher.start_link([])
+      {:ok, resource1} = River.create(%{name: "Shenandoah", tags: ["tributary"]})
+      {:ok, resource2} = River.create(%{name: "Vermillion ", tags: ["tributary"]})
+      {:ok, resource3} = River.create(%{name: "Atchafalaya", tags: ["distributary"]})
+      {:ok, %{entries: results}} = River.list(tags: [not_contains: "tributary"])
+      refute Enum.member?(results, resource1)
+      refute Enum.member?(results, resource2)
+      assert Enum.member?(results, resource3)
+    end
+
     test "supports filtering nil values" do
       {:ok, tree1} = create(:tree, %{bark_color: "gray", name: "Birch", height: 5})
       {:ok, tree2} = create(:tree, %{bark_color: "brown", name: "Walnut", height: 10})
